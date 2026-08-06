@@ -1,0 +1,15 @@
+{
+ "doctype": "DocType",
+ "istable": 1,
+ "module": "Financial Reports",
+ "name": "IFRS 18 MPM Adjustment",
+ "field_order": ["adjustment_label", "account", "treatment", "tax_rate", "nci_effect"],
+ "fields": [
+  {"fieldname": "adjustment_label", "fieldtype": "Data", "in_list_view": 1, "label": "Adjustment", "reqd": 1},
+  {"fieldname": "account", "fieldtype": "Link", "in_list_view": 1, "label": "Account", "options": "Account", "reqd": 1},
+  {"default": "Add", "fieldname": "treatment", "fieldtype": "Select", "in_list_view": 1, "label": "Treatment", "options": "Add\nSubtract"},
+  {"default": "0", "fieldname": "tax_rate", "fieldtype": "Percent", "in_list_view": 1, "label": "Tax rate"},
+  {"default": "0", "fieldname": "nci_effect", "fieldtype": "Currency", "label": "NCI effect"}
+ ]
+}
+

@@ -1,0 +1,28 @@
+{
+ "doctype": "DocType",
+ "issingle": 1,
+ "module": "Financial Reports",
+ "name": "IFRS 18 Reporting Settings",
+ "permissions": [
+  {"role": "Accounts Manager", "read": 1, "write": 1, "create": 1},
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1}
+ ],
+ "field_order": [
+  "presentation_section", "expense_presentation", "early_adoption", "materiality_threshold",
+  "business_section", "invests_as_main_business_activity", "provides_financing_to_customers",
+  "disclosure_section", "reporting_basis", "approval_note"
+ ],
+ "fields": [
+  {"fieldname": "presentation_section", "fieldtype": "Section Break", "label": "Presentation policy"},
+  {"default": "By function", "fieldname": "expense_presentation", "fieldtype": "Select", "label": "Operating expense presentation", "options": "By function\nBy nature\nMixed"},
+  {"default": "1", "fieldname": "early_adoption", "fieldtype": "Check", "label": "Early adoption of IFRS 18"},
+  {"default": "0", "fieldname": "materiality_threshold", "fieldtype": "Currency", "label": "Statement materiality threshold"},
+  {"fieldname": "business_section", "fieldtype": "Section Break", "label": "Specified main business activities"},
+  {"default": "0", "description": "Classifies qualifying investment income and expenses in operating profit.", "fieldname": "invests_as_main_business_activity", "fieldtype": "Check", "label": "Invests in assets as a main business activity"},
+  {"default": "0", "description": "Classifies qualifying financing income and expenses in operating profit.", "fieldname": "provides_financing_to_customers", "fieldtype": "Check", "label": "Provides financing to customers as a main business activity"},
+  {"fieldname": "disclosure_section", "fieldtype": "Section Break", "label": "Disclosure"},
+  {"default": "Prepared in accordance with IFRS Accounting Standards and IFRS 18 Presentation and Disclosure in Financial Statements.", "fieldname": "reporting_basis", "fieldtype": "Small Text", "label": "Basis of preparation statement"},
+  {"fieldname": "approval_note", "fieldtype": "Small Text", "label": "Governance / approval note"}
+ ]
+}
+
