@@ -7,9 +7,10 @@ from copy import deepcopy
 
 import frappe
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import flt, formatdate, getdate
 
 from erpnext.accounts.report.financial_statements import get_columns, get_data, get_period_list
+from erpnext.accounts.utils import get_fiscal_year
 
 
 PROFIT_ORDER = (
@@ -48,6 +49,35 @@ def prepare_filters(filters, accumulated_values=False):
 
 
 def get_periods(filters):
+	if filters.get("comparison_enabled"):
+		required = ("period_start_date", "period_end_date", "comparison_from_date", "comparison_to_date")
+		if any(not filters.get(field) for field in required):
+			frappe.throw(_("Current and comparative start and end dates are required."))
+		current_from = getdate(filters.period_start_date)
+		current_to = getdate(filters.period_end_date)
+		comparison_from = getdate(filters.comparison_from_date)
+		comparison_to = getdate(filters.comparison_to_date)
+		if current_to < current_from or comparison_to < comparison_from:
+			frappe.throw(_("The end of each reporting range must be on or after its start."))
+		earliest = min(current_from, comparison_from)
+		latest = max(current_to, comparison_to)
+		periods = []
+		for key, label, from_date, to_date in (
+			("comparative_period", _("Comparative"), comparison_from, comparison_to),
+			("current_period", _("Current"), current_from, current_to),
+		):
+			fiscal_year = get_fiscal_year(to_date, company=filters.company)
+			periods.append(frappe._dict(
+				from_date=from_date,
+				to_date=to_date,
+				key=key,
+				label=f"{label} ({formatdate(from_date)} – {formatdate(to_date)})",
+				year_start_date=earliest,
+				year_end_date=latest,
+				to_date_fiscal_year=fiscal_year[0],
+				from_date_fiscal_year_start_date=fiscal_year[1],
+			))
+		return periods
 	return get_period_list(
 		filters.from_fiscal_year,
 		filters.to_fiscal_year,
@@ -134,7 +164,7 @@ def _total_row(label, rows, periods, currency, indent=0):
 	}
 	for period in periods:
 		row[period.key] = sum(flt(item.get(period.key)) for item in rows)
-	row["total"] = sum(flt(item.get("total")) for item in rows)
+	row["total"] = row.get("current_period") if "current_period" in row else sum(flt(item.get("total")) for item in rows)
 	return row
 
 
@@ -151,7 +181,7 @@ def category_rows(aggregates, category, periods, currency):
 
 def profit_or_loss(filters):
 	filters = prepare_filters(filters)
-	periods, aggregates, _ = aggregate_accounts(filters, ("Income", "Expense"))
+	periods, aggregates, account_rows = aggregate_accounts(filters, ("Income", "Expense"))
 	currency = currency_for(filters)
 	data = []
 	cumulative = []
@@ -199,12 +229,31 @@ def profit_or_loss(filters):
 def financial_position(filters):
 	filters = prepare_filters(filters, accumulated_values=True)
 	filters.accumulated_values = 1
-	periods, aggregates, _ = aggregate_accounts(filters, ("Asset", "Liability", "Equity"))
+	periods, aggregates, account_rows = aggregate_accounts(filters, ("Asset", "Liability", "Equity"))
 	currency = currency_for(filters)
 	data = []
 	section_totals = {}
 	for category in POSITION_ORDER:
 		rows = category_rows(aggregates, category, periods, currency)
+		if category == "Equity":
+			profit_row = {
+				"account_name": _("Current period earnings"),
+				"account": _("Current period earnings"),
+				"line_item": _("Current period earnings"),
+				"currency": currency,
+				"indent": 1,
+			}
+			for period in periods:
+				fy_start = get_fiscal_year(period.to_date, company=filters.company)[1]
+				profit_row[period.key] = flt(frappe.db.sql("""
+					select coalesce(sum(case when a.root_type='Income' then gle.credit-gle.debit
+						when a.root_type='Expense' then gle.credit-gle.debit else 0 end), 0)
+					from `tabGL Entry` gle inner join `tabAccount` a on a.name=gle.account
+					where gle.company=%s and gle.posting_date between %s and %s
+					and gle.is_cancelled=0 and gle.voucher_type != 'Period Closing Voucher'
+				""", (filters.company, fy_start, period.to_date))[0][0])
+			profit_row["total"] = profit_row.get("current_period", profit_row.get(periods[-1].key, 0))
+			rows.append(profit_row)
 		data.append({"account_name": f"'{_(category)}'", "account": f"'{_(category)}'", "indent": 0})
 		data.extend(rows)
 		total = _total_row(f"Total {category}", rows, periods, currency)

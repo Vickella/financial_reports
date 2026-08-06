@@ -8,7 +8,7 @@ from financial_reports.reporting import aggregate_accounts, currency_for, get_co
 
 def execute(filters=None):
 	filters = prepare_filters(filters)
-	periods, _, account_rows = aggregate_accounts(filters)
+	periods, aggregates, account_rows = aggregate_accounts(filters)
 	currency = currency_for(filters)
 	notes = OrderedDict()
 	for row, mapping, factor in account_rows:

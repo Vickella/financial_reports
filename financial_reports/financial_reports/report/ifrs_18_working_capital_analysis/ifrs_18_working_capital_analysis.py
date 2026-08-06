@@ -6,7 +6,7 @@ from financial_reports.reporting import aggregate_accounts, currency_for, prepar
 def execute(filters=None):
 	filters = prepare_filters(filters, accumulated_values=True)
 	filters.accumulated_values = 1
-	periods, aggregates, _ = aggregate_accounts(filters, ("Asset", "Liability"))
+	periods, aggregates, account_rows = aggregate_accounts(filters, ("Asset", "Liability"))
 	currency = currency_for(filters)
 	data = []
 	for (category, line_item), values in aggregates.items():

@@ -11,8 +11,8 @@ from financial_reports.reporting import (
 
 def execute(filters=None):
 	filters = prepare_filters(filters)
-	columns, data, _, _, _ = profit_or_loss(filters)
-	periods, aggregates, _ = aggregate_accounts(filters, ("Income", "Expense"))
+	columns, data, message, chart, report_summary = profit_or_loss(filters)
+	periods, aggregates, account_rows = aggregate_accounts(filters, ("Income", "Expense"))
 	currency = currency_for(filters)
 	profit_total = next((row for row in reversed(data) if row.get("account_name") == "'Profit'"), None)
 	oci_rows = []

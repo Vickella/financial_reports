@@ -6,4 +6,4 @@ frappe.query_reports["Profit and Loss Statement"].filters.push(
 	{fieldname: "include_default_book_entries", label: __("Include Default FB Entries"), fieldtype: "Check", default: 1},
 	{fieldname: "show_zero_values", label: __("Show zero values"), fieldtype: "Check"}
 );
-
+financial_reports.add_comparison_filters("Profit and Loss Statement");

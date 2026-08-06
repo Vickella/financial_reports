@@ -5,4 +5,4 @@ frappe.query_reports["IFRS 18 Financial Ratios"].filters.push(
 	{fieldname:"include_default_book_entries",label:__("Include Default FB Entries"),fieldtype:"Check",default:1},
 	{fieldname:"show_zero_values",label:__("Show zero values"),fieldtype:"Check",hidden:1}
 );
-
+financial_reports.add_comparison_filters("IFRS 18 Financial Ratios");

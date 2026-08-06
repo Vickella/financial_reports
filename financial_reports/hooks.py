@@ -7,6 +7,8 @@ app_license = "mit"
 
 required_apps = ["erpnext"]
 
+app_include_js = "/assets/financial_reports/js/report_filters.js"
+
 after_install = "financial_reports.install.after_install"
 after_migrate = ["financial_reports.install.after_migrate"]
 before_uninstall = "financial_reports.install.before_uninstall"

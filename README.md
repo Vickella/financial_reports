@@ -26,6 +26,8 @@ bench --site your-site migrate
 bench build --app financial_reports
 ```
 
+Printable PDF export requires `wkhtmltopdf` on the bench host. On Ubuntu: `sudo apt-get install wkhtmltopdf`.
+
 Installation is intentionally non-destructive: it redirects the three standard Report records to the Financial Reports module, so existing ERPNext workspace links remain valid. Uninstall restores their module to `Accounts`. ERPNext source files are never patched.
 
 ## First-use control procedure
