@@ -48,6 +48,19 @@ The shared template was compiled by Frappe's microtemplate engine. Assertions co
 
 Frappe's server PDF pipeline produced a valid `%PDF` file (18,203 bytes in the final pipeline and download-endpoint checks). The host uses `wkhtmltopdf 0.12.6`. Browser assets were rebuilt and both UAT caches cleared.
 
+## Wind Power ledger reconciliation
+
+The posted `Wind Power LLC` data on `farm.test` was reconciled independently from raw GL entries through ERPNext Trial Balance account balances and into the IFRS primary statements:
+
+- 2026: 37 non-zero accounts; **0** GL-to-Trial-Balance mismatches; **0** Trial-Balance-to-IFRS mismatches; assets, liabilities, profit and the accounting equation each differed by **0.00**;
+- 2027 year to date: 17 non-zero accounts with the same zero-difference results;
+- PPE reconciled to **16,200.00** at every stage: plant and machinery 18,000.00, office equipment 4,200.00 and accumulated depreciation (6,000.00);
+- automatically mapped biological assets were separated from PPE without overriding manually locked mappings;
+- `MAT-STE-2026-00003` credited Biological Asset - Crop Production by 600,000.00 when inventory was received, while the 598,750.00 fair-value adjustment `ACC-JV-2026-00003` was posted on 3 March 2027. The reports preserve those posting dates and expose the resulting 2026 biological-asset credit balance separately;
+- the 2025 date-based statements are zero, but ERPNext Trial Balance shows offsetting 480.00 debit/credit opening balances because mid-year voucher `ACC-JV-2026-00004` was marked `is_opening = Yes` on 15 July 2026. Its net effect is zero; the source voucher requires user review rather than report-side alteration;
+- the Balance Sheet now carries unclosed prior-year earnings into equity, eliminating the 75,059.00 cross-year imbalance found in the original 2027 report; and
+- all 12 reports executed with the live 2025/2026 comparative filters and produced XLSX and print output. Budget Variance and Management Performance Measures correctly returned no rows because Wind Power LLC had no corresponding Budget or MPM definition records.
+
 ## Currency, permissions and filters
 
 - Existing USD/ZWG exchange fixtures were used to run the P&L in both currencies. Six non-zero statement lines converted at the expected **30:1** rate; values were not merely relabelled.

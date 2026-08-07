@@ -31,3 +31,13 @@ class TestIFRS18Mapping(FrappeTestCase):
 		))
 		self.assertEqual(mapping.category, "Non-current assets")
 		self.assertEqual(mapping.cash_flow, "Investing")
+
+	def test_biological_asset_is_not_property_plant_and_equipment(self):
+		mapping = infer_mapping(frappe._dict(
+			name="Biological Asset - Maize - TEST",
+			account_name="Biological Asset - Maize",
+			account_type="Fixed Asset",
+			root_type="Asset",
+		))
+		self.assertEqual((mapping.category, mapping.line_item),
+			("Non-current assets", "Biological assets"))

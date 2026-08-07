@@ -49,6 +49,8 @@ def infer_mapping(account) -> Mapping:
 	type_ = account.get("account_type") or ""
 
 	if root == "Asset":
+		if _contains(name, "biological asset"):
+			return Mapping("Non-current assets", "Biological assets", "Investing", note="Biological assets")
 		if type_ == "Cash" or _contains(name, r"\bcash\b", r"bank"):
 			return Mapping("Current assets", "Cash and cash equivalents", "Cash and cash equivalents", note="Cash and short-term deposits")
 		if type_ == "Receivable" or _contains(name, "receivable", "contract asset"):
@@ -240,3 +242,28 @@ def map_all_accounts(force: bool = False) -> int:
 		count += int(apply_mapping(account, force=force))
 	return count
 
+
+
+def remap_automatic_biological_assets() -> int:
+	"""Move legacy automatic biological-asset mappings out of PPE without overriding user locks."""
+	if not frappe.db.has_column("Account", "custom_ifrs18_category"):
+		return 0
+	fields = [
+		"name", "account_name", "account_type", "root_type", "is_group",
+		"custom_ifrs18_category", "custom_ifrs18_mapping_locked",
+		"custom_ifrs18_mapping_source",
+	]
+	count = 0
+	for account in frappe.get_all(
+		"Account",
+		filters={"root_type": "Asset", "custom_ifrs18_mapping_locked": 0,
+			"custom_ifrs18_mapping_source": ["like", "Automatic%"]},
+		fields=fields,
+	):
+		mapping = infer_mapping(account)
+		if mapping.line_item != "Biological assets":
+			continue
+		count += int(apply_mapping(
+			account, force=True, source="Automatic rule update: biological assets"
+		))
+	return count

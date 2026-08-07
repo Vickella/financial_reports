@@ -43,7 +43,7 @@ LINE_ITEM_ORDER = {
 	"Income taxes": ("income tax",),
 	"Discontinued operations": ("discontinued",),
 	"Non-current assets": (
-		"property, plant", "investment properties", "intangible", "goodwill", "right-of-use",
+		"property, plant", "biological", "investment properties", "intangible", "goodwill", "right-of-use",
 		"associate", "investments", "financial assets", "deferred tax",
 	),
 	"Current assets": (
@@ -298,18 +298,23 @@ def financial_position(filters):
 	category_data = {category: category_rows(aggregates, category, periods, currency) for category in POSITION_ORDER}
 
 	profit_row = {
-		"account_name": _("Current period earnings"), "account": _("Current period earnings"),
-		"line_item": _("Current period earnings"), "currency": currency, "indent": 1,
+		"account_name": _("Unclosed and current-period earnings"),
+		"account": _("Unclosed and current-period earnings"),
+		"line_item": _("Unclosed and current-period earnings"), "currency": currency, "indent": 1,
 	}
 	for period in periods:
-		fy_start = get_fiscal_year(period.to_date, company=filters.company)[1]
-		profit_row[period.key] = flt(frappe.db.sql("""
-			select coalesce(sum(case when a.root_type='Income' then gle.credit-gle.debit
-				when a.root_type='Expense' then gle.credit-gle.debit else 0 end), 0)
-			from `tabGL Entry` gle inner join `tabAccount` a on a.name=gle.account
-			where gle.company=%s and gle.posting_date between %s and %s
-			and gle.is_cancelled=0 and gle.voucher_type != 'Period Closing Voucher'
-		""", (filters.company, fy_start, period.to_date))[0][0])
+		asset_balance = sum(
+			flt(row.get(period.key))
+			for category in ("Non-current assets", "Current assets")
+			for row in category_data[category]
+		)
+		liability_balance = sum(
+			flt(row.get(period.key))
+			for category in ("Non-current liabilities", "Current liabilities")
+			for row in category_data[category]
+		)
+		mapped_equity = sum(flt(row.get(period.key)) for row in category_data["Equity"])
+		profit_row[period.key] = asset_balance - liability_balance - mapped_equity
 	profit_row["total"] = profit_row.get("current_period", profit_row.get(periods[-1].key, 0))
 	category_data["Equity"].append(profit_row)
 

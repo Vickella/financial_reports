@@ -5,7 +5,10 @@ import json
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
-from financial_reports.mapping import ALL_CATEGORIES, CASH_FLOW_ACTIVITIES, map_all_accounts
+from financial_reports.mapping import (
+	ALL_CATEGORIES, CASH_FLOW_ACTIVITIES, map_all_accounts,
+	remap_automatic_biological_assets,
+)
 
 
 REPLACED_REPORTS = ("Profit and Loss Statement", "Balance Sheet", "Cash Flow")
@@ -201,6 +204,7 @@ def restore_standard_reports():
 def after_install():
 	ensure_custom_fields()
 	map_all_accounts()
+	remap_automatic_biological_assets()
 	replace_standard_reports()
 	remove_legacy_workspace()
 	remove_accounting_workspace_section()
@@ -211,6 +215,7 @@ def after_install():
 def after_migrate():
 	ensure_custom_fields()
 	map_all_accounts()
+	remap_automatic_biological_assets()
 	replace_standard_reports()
 	remove_legacy_workspace()
 	remove_accounting_workspace_section()
