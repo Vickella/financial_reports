@@ -48,9 +48,10 @@ const rendered = frappe.template.compile(template, "ifrs18_validation")({
 for (const expected of ["Test", "Operating profit", "(138,441.60)", "282,150.00", ">USD<"]) {
 	if (!rendered.includes(expected)) throw new Error(`Rendered HTML is missing: ${expected}`);
 }
-for (const prohibited of ["Fiscal period", "Cost center", "Applied filters", "Prepared from ERPNext", "Review materiality", "-138,441.60"]) {
+for (const prohibited of ["Fiscal period", "Cost center", "Applied filters", "Prepared from ERPNext", "Review materiality", "Notes", "-138,441.60"]) {
 	if (rendered.includes(prohibited)) throw new Error(`Rendered HTML contains prohibited text: ${prohibited}`);
 }
 const unitCount = (rendered.match(/>USD</g) || []).length;
 if (unitCount !== 2) throw new Error(`Expected one currency unit per amount column, got ${unitCount}`);
-console.log(JSON.stringify({ compiled: true, rendered_bytes: Buffer.byteLength(rendered), assertions: 12, accounting_parentheses: true, repeated_currency_symbols: false }));
+if (!rendered.includes("ifrs-numeric") || !rendered.includes("ifrs-text")) throw new Error("Typed print alignment classes are missing");
+console.log(JSON.stringify({ compiled: true, rendered_bytes: Buffer.byteLength(rendered), assertions: 14, accounting_parentheses: true, repeated_currency_symbols: false }));

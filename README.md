@@ -5,11 +5,11 @@ An ERPNext v15 app that replaces the standard **Profit and Loss Statement**, **B
 ## Included reports and controls
 
 - Statement of profit or loss with operating, investing, financing, income-tax and discontinued-operation categories and the IFRS 18 required subtotals.
-- Statement of financial position, statement of comprehensive income, statement of changes in equity, and indirect statement of cash flows.
+- Statement of financial position in the supplied PDF order: Assets; non-current and current assets; total assets; Equity and liabilities; equity; non-current and current liabilities; total liabilities; and total equity and liabilities. Also includes statement of comprehensive income, statement of changes in equity, and indirect statement of cash flows.
 - Notes schedule, mapping audit, financial ratios, working-capital analysis, budget variance, cost-centre profitability and MPM reconciliation.
 - Independent current and comparative custom date ranges, fiscal-year periods, ERPNext accounting-dimension filters, presentation-currency conversion, XLSX export, printing and PDF generation.
 - Account-level **IFRS 18 Mapping** and collapsible **Mapping Review** sections. Existing ERPNext accounts are mapped automatically at installation. New accounts receive a rule-based suggestion and must be confirmed and locked by the user.
-- Reference-style statement presentation: Notes column, currency unit beneath each amount-column heading, accounting parentheses for deductions, and no repeated currency symbols on report lines.
+- Reference-style statement presentation: currency unit beneath each amount-column heading, accounting parentheses for deductions, restrained rules and no repeated currency symbols on report lines.
 
 The report structure is based on every PDF supplied with this repository, especially the illustrative statements in `reports structure required.pdf`. The supplied IFRS 18, IAS 1 and IASB/EFRAG materials informed classification, subtotals, aggregation/disaggregation, specified-expense and MPM controls.
 

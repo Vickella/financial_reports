@@ -197,7 +197,7 @@ def validate_posted_dataset(company=None):
 	for period in ("comparative_period", "current_period"):
 		assets = _value(position, "Total assets", period)
 		liabilities = _value(position, "Total liabilities", period)
-		equity = _value(position, "Total Equity", period)
+		equity = _value(position, "Total equity", period)
 		_assert_close(assets, liabilities + equity, f"{period} accounting equation", assertions)
 
 	_ensure_mpm(company.name)

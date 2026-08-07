@@ -32,6 +32,37 @@ OCI_CATEGORIES = (
 	"Other comprehensive income - non-reclassifiable",
 )
 
+LINE_ITEM_ORDER = {
+	"Operating": (
+		"revenue from contracts", "revenue", "cost of sales", "research and development",
+		"other operating income", "selling", "distribution", "administrative",
+		"depreciation", "impairment", "foreign exchange", "other operating",
+	),
+	"Investing": ("share of profit", "rental income", "income from investments", "foreign exchange", "fair value", "other"),
+	"Financing": ("interest expense on borrowings", "interest expense", "finance cost", "foreign exchange"),
+	"Income taxes": ("income tax",),
+	"Discontinued operations": ("discontinued",),
+	"Non-current assets": (
+		"property, plant", "investment properties", "intangible", "goodwill", "right-of-use",
+		"associate", "investments", "financial assets", "deferred tax",
+	),
+	"Current assets": (
+		"inventories", "right of return", "trade and other receivables", "trade receivables",
+		"contract assets", "prepayments", "current tax", "other current", "cash", "held for sale",
+	),
+	"Equity": ("issued capital", "share premium", "treasury", "capital reserves", "retained earnings", "other reserves", "other equity", "non-controlling"),
+	"Non-current liabilities": (
+		"interest-bearing", "borrowings", "financial liabilities", "decommissioning",
+		"restructuring", "provisions", "government grants", "contract liabilities",
+		"employee", "deferred tax",
+	),
+	"Current liabilities": (
+		"trade and other payables", "trade payables", "contract liabilities", "refund liabilities",
+		"interest-bearing", "borrowings", "financial liabilities", "dividends payable",
+		"restructuring", "provisions", "government grants", "income tax", "other current",
+	),
+}
+
 
 def prepare_filters(filters, accumulated_values=False):
 	filters = frappe._dict(filters or {})
@@ -105,15 +136,8 @@ def account_mappings(company):
 
 
 def statement_columns(filters, periods, accumulated_values=False):
-	"""Return statutory statement columns, including the IFRS note cross-reference."""
-	columns = get_columns(filters.periodicity, periods, accumulated_values, filters.company)
-	columns.insert(1, {
-		"fieldname": "note_reference",
-		"label": _("Notes"),
-		"fieldtype": "Data",
-		"width": 90,
-	})
-	return columns
+	"""Return clean statutory statement columns from ERPNext's period engine."""
+	return get_columns(filters.periodicity, periods, accumulated_values, filters.company)
 
 
 def aggregate_accounts(filters, root_types=("Income", "Expense", "Asset", "Liability", "Equity")):
@@ -152,7 +176,6 @@ def aggregate_accounts(filters, root_types=("Income", "Expense", "Asset", "Liabi
 					"category": category,
 					"line_item": line_item,
 					"accounts": [],
-					"note_references": [],
 					"currency": currency_for(filters),
 				},
 			)
@@ -161,9 +184,6 @@ def aggregate_accounts(filters, root_types=("Income", "Expense", "Asset", "Liabi
 				bucket[period.key] = flt(bucket.get(period.key)) + factor * flt(row.get(period.key))
 			bucket["total"] = flt(bucket.get("total")) + factor * flt(row.get("total"))
 			bucket["accounts"].append(row.get("account"))
-			note_reference = (mapping.custom_ifrs18_note_reference or "").strip()
-			if note_reference and note_reference not in bucket["note_references"]:
-				bucket["note_references"].append(note_reference)
 			account_rows.append((row, mapping, factor))
 
 	return periods, aggregates, account_rows
@@ -193,40 +213,66 @@ def category_rows(aggregates, category, periods, currency):
 		row.update({
 			"account_name": _(line_item),
 			"account": _(line_item),
-			"note_reference": ", ".join(row.pop("note_references", [])),
 			"indent": 1,
 		})
 		rows.append(row)
+	order = LINE_ITEM_ORDER.get(category, ())
+	def rank(item):
+		label = str(item.get("line_item") or item.get("account_name") or "").lower()
+		return next((index for index, token in enumerate(order) if token in label), len(order)), label
+	rows.sort(key=rank)
 	return rows
+
+
+def _section_row(label, indent=0):
+	return {"account_name": f"'{_(label)}'", "account": f"'{_(label)}'", "indent": indent}
 
 
 def profit_or_loss(filters):
 	filters = prepare_filters(filters)
 	periods, aggregates, account_rows = aggregate_accounts(filters, ("Income", "Expense"))
 	currency = currency_for(filters)
-	data = []
-	cumulative = []
+	operating = category_rows(aggregates, "Operating", periods, currency)
+	investing = category_rows(aggregates, "Investing", periods, currency)
+	financing = category_rows(aggregates, "Financing", periods, currency)
+	tax = category_rows(aggregates, "Income taxes", periods, currency)
+	discontinued = category_rows(aggregates, "Discontinued operations", periods, currency)
 
-	def add_category(category, subtotal=None):
-		rows = category_rows(aggregates, category, periods, currency)
-		if rows:
-			data.append({"account_name": f"'{_(category)}'", "account": f"'{_(category)}'", "indent": 0})
-			data.extend(rows)
-		cumulative.extend(rows)
-		if subtotal:
-			data.append(_total_row(subtotal, cumulative, periods, currency))
-			data.append({})
-		return rows
+	data = [_section_row("Continuing operations")]
+	gross_rows = [
+		row for row in operating
+		if "revenue" in str(row.get("line_item", "")).lower()
+		or "cost of sales" in str(row.get("line_item", "")).lower()
+	]
+	other_operating = [row for row in operating if row not in gross_rows]
+	data.extend(gross_rows)
+	if gross_rows:
+		data.extend([_total_row("Gross profit", gross_rows, periods, currency), {}])
+	data.extend(other_operating)
+	operating_total = _total_row("Operating profit", operating, periods, currency)
+	data.extend([operating_total, {}])
 
-	operating = add_category("Operating", "Operating profit")
-	add_category("Investing", "Profit before financing and income taxes")
-	add_category("Financing", "Profit before income tax")
-	add_category("Income taxes", "Profit from continuing operations")
-	add_category("Discontinued operations", "Profit")
+	cumulative = list(operating)
+	cumulative.extend(investing)
+	data.extend(investing)
+	before_financing = _total_row("Profit before financing and income taxes", cumulative, periods, currency)
+	data.extend([before_financing, {}])
+	cumulative.extend(financing)
+	data.extend(financing)
+	before_tax = _total_row("Profit before income tax", cumulative, periods, currency)
+	data.extend([before_tax, {}])
+	cumulative.extend(tax)
+	data.extend(tax)
+	continuing_total = _total_row("Profit from continuing operations", cumulative, periods, currency)
+	data.extend([continuing_total, {}])
+	if discontinued:
+		data.append(_section_row("Discontinued operations"))
+		data.extend(discontinued)
+		cumulative.extend(discontinued)
+	profit_total = _total_row("Profit", cumulative, periods, currency)
+	data.append(profit_total)
 
 	columns = statement_columns(filters, periods, filters.accumulated_values)
-	operating_total = _total_row("Operating profit", operating, periods, currency)
-	profit_total = _total_row("Profit", cumulative, periods, currency)
 	chart = {
 		"data": {
 			"labels": [p.label for p in periods],
@@ -235,9 +281,7 @@ def profit_or_loss(filters):
 				{"name": _("Profit"), "values": [profit_total.get(p.key, 0) for p in periods]},
 			],
 		},
-		"type": "bar",
-		"fieldtype": "Currency",
-		"currency": currency,
+		"type": "bar", "fieldtype": "Currency", "currency": currency,
 	}
 	summary = [
 		{"label": _("Operating profit"), "value": operating_total.get("total", 0), "datatype": "Currency", "currency": currency},
@@ -246,59 +290,73 @@ def profit_or_loss(filters):
 	]
 	return columns, data, None, chart, summary
 
-
 def financial_position(filters):
 	filters = prepare_filters(filters, accumulated_values=True)
 	filters.accumulated_values = 1
 	periods, aggregates, account_rows = aggregate_accounts(filters, ("Asset", "Liability", "Equity"))
 	currency = currency_for(filters)
-	data = []
-	section_totals = {}
-	for category in POSITION_ORDER:
-		rows = category_rows(aggregates, category, periods, currency)
-		if category == "Equity":
-			profit_row = {
-				"account_name": _("Current period earnings"),
-				"account": _("Current period earnings"),
-				"line_item": _("Current period earnings"),
-				"currency": currency,
-				"indent": 1,
-			}
-			for period in periods:
-				fy_start = get_fiscal_year(period.to_date, company=filters.company)[1]
-				profit_row[period.key] = flt(frappe.db.sql("""
-					select coalesce(sum(case when a.root_type='Income' then gle.credit-gle.debit
-						when a.root_type='Expense' then gle.credit-gle.debit else 0 end), 0)
-					from `tabGL Entry` gle inner join `tabAccount` a on a.name=gle.account
-					where gle.company=%s and gle.posting_date between %s and %s
-					and gle.is_cancelled=0 and gle.voucher_type != 'Period Closing Voucher'
-				""", (filters.company, fy_start, period.to_date))[0][0])
-			profit_row["total"] = profit_row.get("current_period", profit_row.get(periods[-1].key, 0))
-			rows.append(profit_row)
-		data.append({"account_name": f"'{_(category)}'", "account": f"'{_(category)}'", "indent": 0})
-		data.extend(rows)
-		total = _total_row(f"Total {category}", rows, periods, currency)
-		data.extend([total, {}])
-		section_totals[category] = total
+	category_data = {category: category_rows(aggregates, category, periods, currency) for category in POSITION_ORDER}
+
+	profit_row = {
+		"account_name": _("Current period earnings"), "account": _("Current period earnings"),
+		"line_item": _("Current period earnings"), "currency": currency, "indent": 1,
+	}
+	for period in periods:
+		fy_start = get_fiscal_year(period.to_date, company=filters.company)[1]
+		profit_row[period.key] = flt(frappe.db.sql("""
+			select coalesce(sum(case when a.root_type='Income' then gle.credit-gle.debit
+				when a.root_type='Expense' then gle.credit-gle.debit else 0 end), 0)
+			from `tabGL Entry` gle inner join `tabAccount` a on a.name=gle.account
+			where gle.company=%s and gle.posting_date between %s and %s
+			and gle.is_cancelled=0 and gle.voucher_type != 'Period Closing Voucher'
+		""", (filters.company, fy_start, period.to_date))[0][0])
+	profit_row["total"] = profit_row.get("current_period", profit_row.get(periods[-1].key, 0))
+	category_data["Equity"].append(profit_row)
+
+	section_totals = {
+		category: _total_row(f"Total {category.lower()}", rows, periods, currency)
+		for category, rows in category_data.items()
+	}
+	data = [_section_row("Assets")]
+	for category in ("Non-current assets", "Current assets"):
+		data.append(_section_row(category))
+		data.extend(category_data[category])
+		data.extend([section_totals[category], {}])
+	total_assets = _total_row(
+		"Total assets", [section_totals["Non-current assets"], section_totals["Current assets"]],
+		periods, currency,
+	)
+	data.extend([total_assets, {}, _section_row("Equity and liabilities")])
+
+	data.append(_section_row("Equity"))
+	data.extend(category_data["Equity"])
+	total_equity = section_totals["Equity"]
+	data.extend([total_equity, {}])
+	for category in ("Non-current liabilities", "Current liabilities"):
+		data.append(_section_row(category))
+		data.extend(category_data[category])
+		data.extend([section_totals[category], {}])
+	total_liabilities = _total_row(
+		"Total liabilities", [section_totals["Non-current liabilities"], section_totals["Current liabilities"]],
+		periods, currency,
+	)
+	total_equity_and_liabilities = _total_row(
+		"Total equity and liabilities", [total_equity, total_liabilities], periods, currency,
+	)
+	data.extend([total_liabilities, total_equity_and_liabilities])
 
 	columns = statement_columns(filters, periods, True)
-	asset_rows = [section_totals[c] for c in ("Non-current assets", "Current assets")]
-	liability_rows = [section_totals[c] for c in ("Non-current liabilities", "Current liabilities")]
-	total_assets = _total_row("Total assets", asset_rows, periods, currency)
-	total_liabilities = _total_row("Total liabilities", liability_rows, periods, currency)
-	data.extend([total_assets, total_liabilities])
 	latest = periods[-1].key
 	summary = [
 		{"label": _("Total assets"), "value": total_assets.get(latest, 0), "datatype": "Currency", "currency": currency},
 		{"label": _("Total liabilities"), "value": total_liabilities.get(latest, 0), "datatype": "Currency", "currency": currency},
-		{"label": _("Total equity"), "value": section_totals["Equity"].get(latest, 0), "datatype": "Currency", "currency": currency},
+		{"label": _("Total equity"), "value": total_equity.get(latest, 0), "datatype": "Currency", "currency": currency},
 	]
 	chart = {"data": {"labels": [p.label for p in periods], "datasets": [
 		{"name": _("Assets"), "values": [total_assets.get(p.key, 0) for p in periods]},
 		{"name": _("Liabilities"), "values": [total_liabilities.get(p.key, 0) for p in periods]},
 	]}, "type": "bar", "fieldtype": "Currency", "currency": currency}
 	return columns, data, None, chart, summary
-
 
 def value_for_category(aggregates, category, period_key="total"):
 	return sum(flt(row.get(period_key)) for (cat, _), row in aggregates.items() if cat == category)

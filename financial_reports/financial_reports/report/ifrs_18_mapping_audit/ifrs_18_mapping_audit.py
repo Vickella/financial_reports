@@ -35,7 +35,7 @@ def execute(filters=None):
 		{"fieldname": "custom_ifrs18_category", "label": _("IFRS 18 category"), "fieldtype": "Data", "width": 180},
 		{"fieldname": "custom_ifrs18_line_item", "label": _("Statement line item"), "fieldtype": "Data", "width": 240},
 		{"fieldname": "custom_ifrs18_cash_flow_activity", "label": _("Cash flow"), "fieldtype": "Data", "width": 120},
-		{"fieldname": "custom_ifrs18_note_reference", "label": _("Note"), "fieldtype": "Data", "width": 180},
+		{"fieldname": "custom_ifrs18_note_reference", "label": _("Disclosure group"), "fieldtype": "Data", "width": 180},
 		{"fieldname": "custom_ifrs18_mapping_confidence", "label": _("Confidence"), "fieldtype": "Data", "width": 110},
 		{"fieldname": "custom_ifrs18_mapping_review_required", "label": _("Review required"), "fieldtype": "Check", "width": 105},
 		{"fieldname": "custom_ifrs18_mapping_locked", "label": _("Reviewed"), "fieldtype": "Check", "width": 80},

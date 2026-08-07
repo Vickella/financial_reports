@@ -27,7 +27,6 @@ Results:
 - all 12 statutory, disclosure and management reports executed;
 - every report produced an XLSX workbook and loaded the shared print format;
 - arbitrary comparative ranges `2026-01-06`?`2026-02-04` and `2026-03-07`?`2026-04-05` were calculated independently;
-- P&L, financial position, comprehensive income, cash flow and changes in equity include a Notes column;
 - all submitted validation vouchers were cancelled through normal ERPNext hooks after testing. Cancelled records remain where VerityGuard retains audit links and have no GL reporting effect.
 
 The final automated suite ran **12 tests** successfully.
@@ -40,9 +39,11 @@ The shared template was compiled by Frappe's microtemplate engine. Assertions co
 - no repeated currency symbol before report-line amounts;
 - one currency unit directly below each amount-column heading;
 - negative/deduction values shown in accounting parentheses, never with a minus sign;
-- reference-style white statement layout, restrained rules, bold section/subtotal rows and reference statement titles.
+- reference-style white statement layout, restrained rules, bold section/subtotal rows and reference statement titles;
+- no Notes column on the primary statements; and
+- PDF-derived profit-or-loss and financial-position section/subtotal ordering, including total equity and liabilities.
 
-Frappe's server PDF pipeline produced a valid `%PDF` file (18,279 bytes in the final pipeline check). The host uses `wkhtmltopdf 0.12.6`. Browser assets were rebuilt and both UAT caches cleared.
+Frappe's server PDF pipeline produced a valid `%PDF` file (18,203 bytes in the final pipeline and download-endpoint checks). The host uses `wkhtmltopdf 0.12.6`. Browser assets were rebuilt and both UAT caches cleared.
 
 ## Currency, permissions and filters
 
@@ -56,6 +57,7 @@ Frappe's server PDF pipeline produced a valid `%PDF` file (18,279 bytes in the f
 python -m compileall financial_reports
 node tools/validate_print_template.js
 bench --site test.local run-tests --app financial_reports
+bench --site test.local execute financial_reports.validation_structure.validate_primary_statement_structure
 bench --site test.local execute financial_reports.validation_print.validate_pdf_pipeline
 bench --site test.local execute financial_reports.validation_operational.validate_currency_conversion
 bench --site test.local execute financial_reports.validation_operational.validate_permissions

@@ -48,7 +48,6 @@ def _comparative_cash_flow(filters):
 		data.append(row)
 	columns = [
 		{"fieldname": "section", "label": _("Cash flow"), "fieldtype": "Data", "width": 360},
-		{"fieldname": "note_reference", "label": _("Notes"), "fieldtype": "Data", "width": 90},
 		{
 			"fieldname": "comparative_period",
 			"label": _("Comparative ({0} to {1})").format(filters.comparison_from_date, filters.comparison_to_date),
@@ -103,10 +102,5 @@ def execute(filters=None):
 	result = _comparative_cash_flow(filters) if filters.get("comparison_enabled") else list(
 		erpnext_cash_flow(deepcopy(filters))
 	)
-	if not any(column.get("fieldname") == "note_reference" for column in result[0]):
-		result[0].insert(1, {
-			"fieldname": "note_reference", "label": _("Notes"),
-			"fieldtype": "Data", "width": 90,
-		})
 	_reconcile_from_operating_profit(result, filters)
 	return tuple(result)
