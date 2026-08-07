@@ -17,6 +17,7 @@ doctype_js = {"Account": "public/js/account.js"}
 
 doc_events = {
 	"Account": {
+		"validate": "financial_reports.mapping.validate_account_mapping",
 		"after_insert": "financial_reports.mapping.map_new_account",
 	}
 }

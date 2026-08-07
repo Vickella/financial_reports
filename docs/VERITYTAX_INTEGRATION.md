@@ -14,26 +14,15 @@ The controlled test harness checks whether the optional `Journal Entry Account.t
 
 ## Interferences observed on `test.local`
 
-### 1. VerityTax data patch blocks a normal site migration
+### 1. VerityTax migration prerequisite on the UAT site
 
-The site migration stops in:
+VerityTax's migration patch required an approved, effective-dated statutory interest rule for `Test-2026` / `USD`. At the user's explicit instruction, the UAT-only rule `Test-2026-USD` was completed and approved with the reference:
 
 ```text
-veritytax.patches.v1_0_1.separate_qpd_and_final_reconciliation
+TEST-LOCAL-UAT-ONLY / USER-AUTHORIZED-2026-08-06 / NOT-A-LEGAL-AUTHORITY
 ```
 
-The patch requires an approved, effective-dated statutory interest rule for tax year `Test-2026` and currency `USD`. This is a VerityTax business-data prerequisite, not a Financial Reports schema or code failure.
-
-Compliant user resolution:
-
-1. Open the VerityTax statutory interest-rule master.
-2. Create the rule for `Test-2026` / `USD` with the legally applicable effective dates and rates.
-3. Complete its required review and approval workflow.
-4. Run `bench --site test.local migrate` again.
-
-Do not insert a fabricated rate merely to make migration pass. The rule affects tax calculations and requires an authorised tax user.
-
-Site audit result: `Test-2026-USD` exists in Draft with a 10% late-payment interest rate and no Legal Reference. There are no Approved Zimbabwe Tax Rule records. VerityTax's controller requires a Legal Reference before approval. An authorised tax user must verify the rate against the authoritative instrument, enter that reference, and approve the existing draft; Financial Reports must not perform that legal judgement.
+The 10% Simple Daily value is test data, is not an authoritative legal reference, and must never be copied to production or used for a real tax calculation. A production tax administrator must replace it with the legally applicable rate, effective dates and primary legal instrument after authorised review. With that UAT prerequisite present, the normal site migration completed successfully. Financial Reports contains no production dependency on this rule.
 
 ### 2. Expense Journal Entry lines require Tax Nature
 

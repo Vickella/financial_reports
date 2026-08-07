@@ -104,6 +104,18 @@ def account_mappings(company):
 	return {d.name: d for d in frappe.get_all("Account", filters={"company": company}, fields=fields)}
 
 
+def statement_columns(filters, periods, accumulated_values=False):
+	"""Return statutory statement columns, including the IFRS note cross-reference."""
+	columns = get_columns(filters.periodicity, periods, accumulated_values, filters.company)
+	columns.insert(1, {
+		"fieldname": "note_reference",
+		"label": _("Notes"),
+		"fieldtype": "Data",
+		"width": 90,
+	})
+	return columns
+
+
 def aggregate_accounts(filters, root_types=("Income", "Expense", "Asset", "Liability", "Equity")):
 	"""Return leaf-account balances aggregated by IFRS category and statement line."""
 	filters = prepare_filters(filters)
@@ -140,6 +152,7 @@ def aggregate_accounts(filters, root_types=("Income", "Expense", "Asset", "Liabi
 					"category": category,
 					"line_item": line_item,
 					"accounts": [],
+					"note_references": [],
 					"currency": currency_for(filters),
 				},
 			)
@@ -148,6 +161,9 @@ def aggregate_accounts(filters, root_types=("Income", "Expense", "Asset", "Liabi
 				bucket[period.key] = flt(bucket.get(period.key)) + factor * flt(row.get(period.key))
 			bucket["total"] = flt(bucket.get("total")) + factor * flt(row.get("total"))
 			bucket["accounts"].append(row.get("account"))
+			note_reference = (mapping.custom_ifrs18_note_reference or "").strip()
+			if note_reference and note_reference not in bucket["note_references"]:
+				bucket["note_references"].append(note_reference)
 			account_rows.append((row, mapping, factor))
 
 	return periods, aggregates, account_rows
@@ -174,7 +190,12 @@ def category_rows(aggregates, category, periods, currency):
 		if mapped_category != category:
 			continue
 		row = deepcopy(values)
-		row.update({"account_name": _(line_item), "account": _(line_item), "indent": 1})
+		row.update({
+			"account_name": _(line_item),
+			"account": _(line_item),
+			"note_reference": ", ".join(row.pop("note_references", [])),
+			"indent": 1,
+		})
 		rows.append(row)
 	return rows
 
@@ -203,7 +224,7 @@ def profit_or_loss(filters):
 	add_category("Income taxes", "Profit from continuing operations")
 	add_category("Discontinued operations", "Profit")
 
-	columns = get_columns(filters.periodicity, periods, filters.accumulated_values, filters.company)
+	columns = statement_columns(filters, periods, filters.accumulated_values)
 	operating_total = _total_row("Operating profit", operating, periods, currency)
 	profit_total = _total_row("Profit", cumulative, periods, currency)
 	chart = {
@@ -260,7 +281,7 @@ def financial_position(filters):
 		data.extend([total, {}])
 		section_totals[category] = total
 
-	columns = get_columns(filters.periodicity, periods, True, filters.company)
+	columns = statement_columns(filters, periods, True)
 	asset_rows = [section_totals[c] for c in ("Non-current assets", "Current assets")]
 	liability_rows = [section_totals[c] for c in ("Non-current liabilities", "Current liabilities")]
 	total_assets = _total_row("Total assets", asset_rows, periods, currency)

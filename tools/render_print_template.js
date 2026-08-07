@@ -9,7 +9,7 @@ global.frappe = {
 	datetime: { str_to_user: (value) => value },
 };
 global.__ = (value) => value;
-global.format_currency = (value, currency) => `${currency || "USD"} ${Number(value).toFixed(2)}`;
+global.format_currency = (value, currency) => `${currency || "USD"} ${Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 vm.runInThisContext(fs.readFileSync(
 	"/home/frappe/frappe-bench/apps/frappe/frappe/public/js/frappe/microtemplate.js",
@@ -38,6 +38,7 @@ process.stdout.write(frappe.template.compile(template, "ifrs18_pdf_validation")(
 	],
 	data: [
 		{ account_name: "Revenue", current: 240, comparative: 120, currency: "USD" },
+		{ account_name: "Cost of sales", current: -138.50, comparative: -70, currency: "USD" },
 		{ account_name: "'Operating profit", current: 80, comparative: 40, currency: "USD", is_total: 1 },
 	],
 }));

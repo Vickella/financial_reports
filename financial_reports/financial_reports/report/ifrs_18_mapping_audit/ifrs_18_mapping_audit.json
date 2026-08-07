@@ -8,5 +8,5 @@
  "ref_doctype": "Account",
  "report_name": "IFRS 18 Mapping Audit",
  "report_type": "Script Report",
- "roles": [{"role": "Accounts Manager"}]
+ "roles": [{"role": "Accounts User"}, {"role": "Accounts Manager"}]
 }

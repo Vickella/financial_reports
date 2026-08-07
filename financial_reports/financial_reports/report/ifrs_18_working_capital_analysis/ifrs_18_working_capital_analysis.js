@@ -6,3 +6,4 @@ frappe.query_reports["IFRS 18 Working Capital Analysis"].filters.push(
 	{fieldname:"show_zero_values",label:__("Show zero values"),fieldtype:"Check"}
 );
 financial_reports.add_comparison_filters("IFRS 18 Working Capital Analysis");
+financial_reports.apply_accounting_formatter("IFRS 18 Working Capital Analysis");

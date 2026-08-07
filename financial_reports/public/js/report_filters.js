@@ -35,3 +35,30 @@ financial_reports.add_comparison_filters = function (report_name) {
 		}
 	);
 };
+
+financial_reports.apply_accounting_formatter = function (report_name) {
+	const report = frappe.query_reports[report_name];
+	if (!report || report.__ifrs18_accounting_formatter) {
+		return;
+	}
+	const original_formatter = report.formatter;
+	report.formatter = function (value, row, column, data, default_formatter) {
+		const formatter = original_formatter || default_formatter;
+		const is_numeric = ["Currency", "Float", "Percent"].includes(column.fieldtype);
+		const numeric_value = Number(value);
+		const display_value = is_numeric && Number.isFinite(numeric_value) && numeric_value < 0
+			? Math.abs(numeric_value)
+			: value;
+		let formatted = formatter(display_value, row, column, data, default_formatter);
+		if (column.fieldtype === "Currency") {
+			const currency = (data && data.currency) || frappe.defaults.get_default("currency") || "";
+			const sample = currency ? format_currency(0, currency) : "";
+			const unit = sample.replace(/[0-9.,\s\-()]/g, "");
+			if (unit) formatted = formatted.split(unit).join("").trim();
+		}
+		return is_numeric && Number.isFinite(numeric_value) && numeric_value < 0
+			? `(${formatted})`
+			: formatted;
+	};
+	report.__ifrs18_accounting_formatter = true;
+};

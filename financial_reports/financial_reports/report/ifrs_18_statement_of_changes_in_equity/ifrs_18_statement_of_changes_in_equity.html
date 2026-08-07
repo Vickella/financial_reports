@@ -1,21 +1,17 @@
 <style>
 	@page { size: A4 landscape; margin: 12mm; }
-	.ifrs18-print { color: #172033; font-family: Inter, "Helvetica Neue", Arial, sans-serif; font-size: 9pt; }
-	.ifrs18-print .report-header { border-bottom: 2px solid #193b68; margin-bottom: 14px; padding-bottom: 10px; }
-	.ifrs18-print h2 { color: #102a4c; font-size: 18pt; font-weight: 700; margin: 0 0 3px; }
-	.ifrs18-print h3 { color: #294c76; font-size: 12pt; font-weight: 600; margin: 0 0 7px; }
-	.ifrs18-print .period { color: #4d5d73; font-size: 8.5pt; }
-	.ifrs18-print .filter-summary { color: #5a687b; font-size: 7.5pt; margin-top: 6px; }
-	.ifrs18-print .filter-summary span { border-right: 1px solid #c9d2de; display: inline-block; margin: 2px 8px 2px 0; padding-right: 8px; }
+	.ifrs18-print { color: #111; font-family: Arial, "Helvetica Neue", sans-serif; font-size: 9pt; }
+	.ifrs18-print .report-header { margin-bottom: 18px; padding-bottom: 4px; }
+	.ifrs18-print h2 { color: #5e5e5e; font-size: 17pt; font-weight: 700; margin: 0 0 5px; }
+	.ifrs18-print h3 { color: #111; font-size: 11pt; font-weight: 700; margin: 0; }
 	.ifrs18-print table { border-collapse: collapse; table-layout: auto; width: 100%; }
-	.ifrs18-print th { background: #193b68 !important; color: #fff !important; font-size: 8pt; font-weight: 600; padding: 7px 6px; text-align: right; vertical-align: bottom; }
+	.ifrs18-print th { background: #fff !important; border-bottom: 1px solid #111; color: #111 !important; font-size: 8.5pt; font-weight: 700; padding: 3px 6px; text-align: right; vertical-align: bottom; }
 	.ifrs18-print th:first-child, .ifrs18-print th:nth-child(2) { text-align: left; }
-	.ifrs18-print td { border-bottom: 1px solid #dce3ec; padding: 5px 6px; text-align: right; vertical-align: top; }
+	.ifrs18-print .currency-unit-row th { border-bottom: 0; font-size: 7.5pt; padding-bottom: 8px; padding-top: 2px; }
+	.ifrs18-print td { border-bottom: 0; padding: 3px 6px; text-align: right; vertical-align: top; }
 	.ifrs18-print td:first-child, .ifrs18-print td:nth-child(2) { text-align: left; }
-	.ifrs18-print tr.ifrs-total td { border-bottom: 1.5px solid #193b68; border-top: 1px solid #193b68; font-weight: 700; }
-	.ifrs18-print tr.ifrs-section td { background: #edf3f9 !important; color: #193b68; font-weight: 700; padding-top: 7px; }
-	.ifrs18-print .negative { color: #8b1e2d; }
-	.ifrs18-print .footer { border-top: 1px solid #aebac9; color: #66758a; font-size: 7.5pt; margin-top: 14px; padding-top: 7px; }
+	.ifrs18-print tr.ifrs-total td { border-top: 1px solid #111; font-weight: 700; padding-bottom: 6px; }
+	.ifrs18-print tr.ifrs-section td { background: #fff !important; color: #111; font-weight: 700; padding-bottom: 3px; padding-top: 10px; }
 	@media print {
 		.ifrs18-print thead { display: table-header-group; }
 		.ifrs18-print tr { page-break-inside: avoid; }
@@ -23,37 +19,10 @@
 </style>
 
 <div class="ifrs18-print">
+	{% var report_currency = filters.presentation_currency || ""; for (var currency_index = 0; !report_currency && currency_index < data.length; currency_index++) { report_currency = (data[currency_index] || {}).currency || ""; } if (!report_currency && frappe.boot && frappe.boot.sysdefaults) { report_currency = frappe.boot.sysdefaults.currency || ""; } var currency_sample = report_currency ? format_currency(0, report_currency) : ""; var currency_unit = currency_sample.replace(/[0-9.,\s\-()]/g, "") || report_currency; var source_title = report.report_name || report.name || __("IFRS 18 Financial Report"); var statement_titles = {"Profit and Loss Statement": __("Statement of profit or loss"), "Balance Sheet": __("Statement of financial position"), "Cash Flow": __("Statement of cash flows")}; var display_title = statement_titles[source_title] || source_title; %}
 	<div class="report-header">
-		<h2>{%= filters.company || __("Financial statements") %}</h2>
-		<h3>{%= report.report_name || report.name || __("IFRS 18 Financial Report") %}</h3>
-		<div class="period">
-			{% if (filters.filter_based_on === "Date Range" || filters.from_date) { %}
-				<strong>{%= __("Current reporting period") %}:</strong>
-				{%= frappe.datetime.str_to_user(filters.period_start_date || filters.from_date) %}
-				– {%= frappe.datetime.str_to_user(filters.period_end_date || filters.to_date) %}
-			{% } else { %}
-				<strong>{%= __("Fiscal period") %}:</strong>
-				{%= filters.from_fiscal_year || filters.fiscal_year || "" %}
-				{% if (filters.to_fiscal_year && filters.to_fiscal_year !== filters.from_fiscal_year) { %}
-					– {%= filters.to_fiscal_year %}
-				{% } %}
-			{% } %}
-			{% if (filters.comparison_enabled) { %}
-				<br><strong>{%= __("Comparative reporting period") %}:</strong>
-				{%= frappe.datetime.str_to_user(filters.comparison_from_date) %}
-				– {%= frappe.datetime.str_to_user(filters.comparison_to_date) %}
-			{% } %}
-			{% if (filters.cost_center) { %}<br><strong>{%= __("Cost center") %}:</strong> {%= filters.cost_center %}{% } %}
-			{% if (filters.finance_book) { %}<br><strong>{%= __("Finance book") %}:</strong> {%= filters.finance_book %}{% } %}
-		</div>
-		{% var applied_filter_keys = Object.keys(filters).filter(function(key) { var value = filters[key]; return value !== undefined && value !== null && value !== "" && value !== false; }); %}
-		{% if (applied_filter_keys.length) { %}
-			<div class="filter-summary"><strong>{%= __("Applied filters") %}:</strong>
-				{% for (var filter_index = 0; filter_index < applied_filter_keys.length; filter_index++) { var filter_key = applied_filter_keys[filter_index]; var filter_value = filters[filter_key]; %}
-					<span>{%= __(filter_key.replace(/_/g, " ").replace(/\b\w/g, function(letter) { return letter.toUpperCase(); })) %}: {%= Array.isArray(filter_value) ? filter_value.join(", ") : String(filter_value) %}</span>
-				{% } %}
-			</div>
-		{% } %}
+		<h2>{%= display_title %}</h2>
+		<h3>{%= filters.company || __("Financial statements") %}</h3>
 	</div>
 
 	<table>
@@ -65,18 +34,25 @@
 					{% } %}
 				{% } %}
 			</tr>
+			<tr class="currency-unit-row">
+				{% for (var unit_column_index = 0; unit_column_index < columns.length; unit_column_index++) { var unit_column = columns[unit_column_index]; if (!unit_column.hidden) { %}
+					<th>{% if (unit_column.fieldtype === "Currency") { %}{%= currency_unit %}{% } else if (unit_column.fieldtype === "Percent") { %}%{% } %}</th>
+				{% } } %}
+			</tr>
 		</thead>
 		<tbody>
 			{% for (var row_index = 0; row_index < data.length; row_index++) { var row = data[row_index] || {}; %}
 				{% var first_value = row.account_name || row.section || row.component || row.metric || row.note || row.cost_center || ""; %}
 				<tr class="{% if (row.is_total) { %}ifrs-total{% } %} {% if (!row.is_total && String(first_value).charAt(0) === "'") { %}ifrs-section{% } %}">
 					{% for (var column_index = 0; column_index < columns.length; column_index++) { %}
-						{% var column = columns[column_index]; if (!column.hidden) { var value = row[column.fieldname]; %}
-							<td class="{% if ((column.fieldtype === "Currency" || column.fieldtype === "Float" || column.fieldtype === "Percent") && value < 0) { %}negative{% } %}">
-								{% if (column.fieldtype === "Currency" && value !== undefined && value !== null && value !== "") { %}
-									{%= format_currency(value, row.currency || filters.presentation_currency) %}
-								{% } else if (column.fieldtype === "Percent" && value !== undefined && value !== null && value !== "") { %}
-									{%= Number(value).toFixed(2) %}%
+						{% var column = columns[column_index]; if (!column.hidden) { var value = row[column.fieldname]; var numeric_value = Number(value); var is_negative = !isNaN(numeric_value) && numeric_value < 0; %}
+							<td>
+								{% if (column.fieldtype === "Currency" && value !== undefined && value !== null && value !== "") { var currency_value = format_currency(Math.abs(numeric_value), row.currency || report_currency); currency_value = currency_unit ? currency_value.split(currency_unit).join("").trim() : currency_value; %}
+									{% if (numeric_value === 0) { %}–{% } else if (is_negative) { %}({%= currency_value %}){% } else { %}{%= currency_value %}{% } %}
+								{% } else if (column.fieldtype === "Percent" && value !== undefined && value !== null && value !== "") { var percent_value = Math.abs(numeric_value).toFixed(2) + "%"; %}
+									{% if (is_negative) { %}({%= percent_value %}){% } else { %}{%= percent_value %}{% } %}
+								{% } else if (column.fieldtype === "Float" && value !== undefined && value !== null && value !== "") { var float_value = Math.abs(numeric_value).toLocaleString(); %}
+									{% if (is_negative) { %}({%= float_value %}){% } else { %}{%= float_value %}{% } %}
 								{% } else { %}
 									{%= value === undefined || value === null ? "" : String(value).replace(/^'|'$/g, "") %}
 								{% } %}
@@ -87,9 +63,4 @@
 			{% } %}
 		</tbody>
 	</table>
-
-	<div class="footer">
-		{%= __("Prepared from ERPNext general-ledger data using the Financial Reports IFRS 18 mapping.") %}
-		{%= __("Review materiality, classifications, consolidation adjustments and disclosures before external issue.") %}
-	</div>
 </div>

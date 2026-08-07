@@ -20,10 +20,16 @@ def validate_pdf_pipeline():
 		check=True,
 	)
 	html = completed.stdout.decode("utf-8")
-	if "Current reporting period" not in html or "Comparative reporting period" not in html:
-		raise AssertionError("Rendered print HTML is missing selected date-range headings")
+	for prohibited in ("Fiscal period", "Cost center", "Applied filters", "Prepared from ERPNext", "Review materiality"):
+		if prohibited in html:
+			raise AssertionError(f"Rendered print HTML contains prohibited text: {prohibited}")
+	if "(138.50)" not in html or "-138.50" in html:
+		raise AssertionError("Accounting-parentheses formatting was not rendered")
 
 	pdf = get_pdf(html, options={"orientation": "Landscape", "page-size": "A4"})
 	if not pdf.startswith(b"%PDF") or len(pdf) < 1000:
 		raise AssertionError("Frappe PDF pipeline did not return a valid PDF")
-	return {"rendered_html_bytes": len(html.encode()), "pdf_bytes": len(pdf), "pdf_signature": "%PDF"}
+	return {
+		"rendered_html_bytes": len(html.encode()), "pdf_bytes": len(pdf), "pdf_signature": "%PDF",
+		"accounting_parentheses": True, "prohibited_metadata_removed": True,
+	}

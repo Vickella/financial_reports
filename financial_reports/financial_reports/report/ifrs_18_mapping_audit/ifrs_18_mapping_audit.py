@@ -9,7 +9,7 @@ def execute(filters=None):
 		"Account", filters=query_filters,
 		fields=["name", "company", "root_type", "account_type", "is_group", "custom_ifrs18_category",
 			"custom_ifrs18_line_item", "custom_ifrs18_cash_flow_activity", "custom_ifrs18_note_reference",
-			"custom_ifrs18_mapping_confidence", "custom_ifrs18_mapping_locked"],
+			"custom_ifrs18_mapping_confidence", "custom_ifrs18_mapping_review_required", "custom_ifrs18_mapping_locked"],
 		order_by="company, lft",
 	)
 	data = []
@@ -23,6 +23,8 @@ def execute(filters=None):
 			issues.append(_("Missing cash flow mapping"))
 		if row.custom_ifrs18_mapping_confidence == "Fallback":
 			issues.append(_("Fallback mapping requires review"))
+		if row.custom_ifrs18_mapping_review_required:
+			issues.append(_("New account mapping requires confirmation"))
 		row["status"] = "; ".join(issues) or _("Complete")
 		if not filters.get("exceptions_only") or issues:
 			data.append(row)
@@ -35,6 +37,7 @@ def execute(filters=None):
 		{"fieldname": "custom_ifrs18_cash_flow_activity", "label": _("Cash flow"), "fieldtype": "Data", "width": 120},
 		{"fieldname": "custom_ifrs18_note_reference", "label": _("Note"), "fieldtype": "Data", "width": 180},
 		{"fieldname": "custom_ifrs18_mapping_confidence", "label": _("Confidence"), "fieldtype": "Data", "width": 110},
+		{"fieldname": "custom_ifrs18_mapping_review_required", "label": _("Review required"), "fieldtype": "Check", "width": 105},
 		{"fieldname": "custom_ifrs18_mapping_locked", "label": _("Reviewed"), "fieldtype": "Check", "width": 80},
 		{"fieldname": "status", "label": _("Audit status"), "fieldtype": "Data", "width": 240},
 	]

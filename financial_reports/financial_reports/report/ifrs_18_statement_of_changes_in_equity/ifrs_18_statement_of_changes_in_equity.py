@@ -12,7 +12,7 @@ def execute(filters=None):
 	accounts = frappe.get_all(
 		"Account",
 		filters={"company": filters.company, "root_type": "Equity", "is_group": 0, "disabled": 0},
-		fields=["name", "account_name", "custom_ifrs18_line_item"],
+		fields=["name", "account_name", "custom_ifrs18_line_item", "custom_ifrs18_note_reference"],
 		order_by="lft",
 	)
 	data = []
@@ -20,6 +20,7 @@ def execute(filters=None):
 		row = {
 			"component": account.custom_ifrs18_line_item or account.account_name,
 			"account": account.name,
+			"note_reference": account.custom_ifrs18_note_reference or "",
 			"currency": currency,
 		}
 		has_value = False
@@ -57,6 +58,7 @@ def execute(filters=None):
 
 	columns = [
 		{"fieldname": "component", "label": _("Equity component"), "fieldtype": "Data", "width": 250},
+		{"fieldname": "note_reference", "label": _("Notes"), "fieldtype": "Data", "width": 90},
 		{"fieldname": "account", "label": _("Account"), "fieldtype": "Link", "options": "Account", "width": 210},
 	]
 	for period in periods:

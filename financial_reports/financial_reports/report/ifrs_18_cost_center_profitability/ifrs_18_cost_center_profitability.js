@@ -6,3 +6,4 @@ frappe.query_reports["IFRS 18 Cost Center Profitability"].filters.push(
 	{fieldname:"show_zero_values",label:__("Show zero values"),fieldtype:"Check",hidden:1}
 );
 financial_reports.add_comparison_filters("IFRS 18 Cost Center Profitability");
+financial_reports.apply_accounting_formatter("IFRS 18 Cost Center Profitability");

@@ -4,4 +4,4 @@ frappe.query_reports["IFRS 18 Mapping Audit"] = {
 		{fieldname: "exceptions_only", label: __("Exceptions only"), fieldtype: "Check", default: 1}
 	]
 };
-
+financial_reports.apply_accounting_formatter("IFRS 18 Mapping Audit");

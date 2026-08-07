@@ -9,3 +9,4 @@ frappe.query_reports["IFRS 18 Budget Variance"] = {
 		{fieldname:"comparison_to_date",label:__("Comparative To"),fieldtype:"Date",depends_on:"eval:doc.comparison_enabled",mandatory_depends_on:"eval:doc.comparison_enabled",default:frappe.datetime.add_years(frappe.datetime.year_end(),-1)}
 	]
 };
+financial_reports.apply_accounting_formatter("IFRS 18 Budget Variance");

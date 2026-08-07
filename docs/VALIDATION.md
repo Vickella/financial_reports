@@ -1,44 +1,65 @@
-# Live validation record
+# Validation record
 
-The automated suite is restricted in code to `test.local` and uses two non-overlapping custom reporting ranges.
+Validation was completed on 7 August 2026 against ERPNext 15.111.0 / Frappe 15.111.1.
 
-Verified behavior:
+## Clean installation and independence
 
-- default ERPNext Profit and Loss, Balance Sheet and Cash Flow Report records resolve to `Financial Reports`;
-- arbitrary current and comparative date ranges are calculated independently;
-- operating, investing, financing, income-tax and discontinued-operation arithmetic reconciles;
-- OCI is excluded from profit and included in total comprehensive income;
-- assets equal liabilities plus equity, including current-period earnings;
-- changes in equity shows opening balance, period changes and closing balance for each range;
-- MPM reconciliation includes account adjustments, income-tax effects and NCI fields;
-- notes, working capital, ratios, cost-centre profitability and budget variance return comparative data;
-- every report exposes a professional landscape print template containing the selected filters; and
-- every report result generates a valid XLSX workbook.
+A dedicated `ifrs18-clean.test` site was created with only Frappe and ERPNext, then a standard ERPNext company and 82-account chart were created before installing this app. The installation result was:
 
-The controlled dataset uses dedicated accounts for every IFRS 18 statement category and major balance-sheet/cash-flow classification. It posts 40 submitted Journal Entries: 20 for the comparative range and 20 for the current range.
+- installed apps: `frappe`, `erpnext`, `financial_reports`;
+- VerityTax and VerityGuard present: **no**;
+- default accounts mapped: **82 of 82**;
+- unmapped accounts: **0**; fallback mappings: **0**;
+- standalone IFRS workspace: **absent**;
+- Financial Reports cards in Accounting: **1**;
+- the three standard ERPNext reports resolved to the `Financial Reports` module.
 
-Run the non-mutating verification again with:
+The app was uninstalled and reinstalled on this site. Uninstall restored the three report records to `Accounts`, removed the Accounting navigation section, and left **0** app-owned Account custom fields. Reinstallation reproduced the successful mapping and navigation result.
+
+## Transaction and report validation
+
+The controlled harness is code-restricted to `test.local`. It created 40 tagged Journal Entries across 21 purpose-built accounts: 20 in a comparative custom range and 20 in a current custom range. It covered assets, liabilities, equity, operating/investing/financing income and expenses, tax, discontinued operations and both OCI classes.
+
+Results:
+
+- 10 independent subtotal-delta assertions passed in the creation lifecycle;
+- 54 line-item, subtotal, OCI and accounting-equation assertions passed in the independent reread;
+- all 12 statutory, disclosure and management reports executed;
+- every report produced an XLSX workbook and loaded the shared print format;
+- arbitrary comparative ranges `2026-01-06`?`2026-02-04` and `2026-03-07`?`2026-04-05` were calculated independently;
+- P&L, financial position, comprehensive income, cash flow and changes in equity include a Notes column;
+- all submitted validation vouchers were cancelled through normal ERPNext hooks after testing. Cancelled records remain where VerityGuard retains audit links and have no GL reporting effect.
+
+The final automated suite ran **12 tests** successfully.
+
+## Print and export validation
+
+The shared template was compiled by Frappe's microtemplate engine. Assertions confirmed:
+
+- no `Fiscal period`, `Cost center`, `Applied filters`, preparation disclaimer or review disclaimer block;
+- no repeated currency symbol before report-line amounts;
+- one currency unit directly below each amount-column heading;
+- negative/deduction values shown in accounting parentheses, never with a minus sign;
+- reference-style white statement layout, restrained rules, bold section/subtotal rows and reference statement titles.
+
+Frappe's server PDF pipeline produced a valid `%PDF` file (18,279 bytes in the final pipeline check). The host uses `wkhtmltopdf 0.12.6`. Browser assets were rebuilt and both UAT caches cleared.
+
+## Currency, permissions and filters
+
+- Existing USD/ZWG exchange fixtures were used to run the P&L in both currencies. Six non-zero statement lines converted at the expected **30:1** rate; values were not merely relabelled.
+- Administrator read access passed and Guest read access was denied. All Financial Reports query reports are available to Accounts User and Accounts Manager; the three replaced statutory reports also retain ERPNext Auditor access. Guest access is denied.
+- Standard ERPNext fiscal-year, project, cost-centre, finance-book and enabled accounting-dimension filters are passed to ERPNext's audited financial-statement engine.
+
+## Repeat commands
 
 ```bash
-bench --site test.local execute financial_reports.validation_existing.validate_posted_dataset
+python -m compileall financial_reports
+node tools/validate_print_template.js
+bench --site test.local run-tests --app financial_reports
+bench --site test.local execute financial_reports.validation_print.validate_pdf_pipeline
+bench --site test.local execute financial_reports.validation_operational.validate_currency_conversion
+bench --site test.local execute financial_reports.validation_operational.validate_permissions
+bench --site test.local execute financial_reports.validation_lifecycle.run_and_cancel
 ```
 
-Do not invoke the mutating seed routine on a production site; it contains an explicit `test.local` guard.
-
-
-## Audit-safe cleanup result
-
-The initial 40 submitted test journals were cancelled through standard ERPNext hooks after synchronising VerityTax's `Foreign Payment Log` DocType. VerityGuard's linked `VG Exception Feed` records were preserved, so the cancelled journals were intentionally not physically deleted. Submitted tagged vouchers remaining: **0**.
-
-The shared print format was also compiled and rendered with Frappe's browser microtemplate engine after correcting its print context from `report_columns` to Frappe's actual `columns` variable.
-
-
-## PDF verification
-
-`wkhtmltopdf 0.12.6` was installed on the Ubuntu bench host. The shared professional template was rendered with Frappe's client microtemplate compiler and passed through Frappe's server PDF pipeline as A4 landscape. Result: valid `%PDF` output, 21,755 bytes. The selected current and comparative periods and formatted values were asserted in the rendered HTML.
-
-
-The final template prints every non-empty applied filter in the report header. Budget Variance was separately verified with current and comparative ranges: 2 rows, 10 columns, 5,160-byte XLSX output, and the shared print format loaded successfully.
-
-
-The post-fix lifecycle then created, submitted, tested and cancelled another 40 tagged journals. Final status: **0 submitted** and **80 cancelled** validation journals. All four Frappe app tests passed.
+Do not invoke mutating validation helpers on production sites. They contain an explicit `test.local` guard.

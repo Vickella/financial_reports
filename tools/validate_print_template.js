@@ -9,7 +9,7 @@ global.frappe = {
 	datetime: { str_to_user: (value) => value },
 };
 global.__ = (value) => value;
-global.format_currency = (value, currency) => `${currency || "USD"} ${Number(value).toFixed(2)}`;
+global.format_currency = (value, currency) => `${currency || "USD"} ${Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const compiler = fs.readFileSync(
 	"/home/frappe/frappe-bench/apps/frappe/frappe/public/js/frappe/microtemplate.js",
@@ -39,11 +39,18 @@ const rendered = frappe.template.compile(template, "ifrs18_validation")({
 		{ fieldname: "comparative", label: "Comparative", fieldtype: "Currency" },
 	],
 	data: [
+		{ account_name: "Revenue", current: 282150, comparative: 159088, currency: "USD" },
+		{ account_name: "Cost of sales", current: -138441.60, comparative: -127946, currency: "USD" },
 		{ account_name: "'Operating profit", current: 105, comparative: 84, currency: "USD", is_total: 1 },
 	],
 });
 
-for (const expected of ["Test", "2026-03-07", "2026-01-06", "Operating profit", "USD 105.00"]) {
+for (const expected of ["Test", "Operating profit", "(138,441.60)", "282,150.00", ">USD<"]) {
 	if (!rendered.includes(expected)) throw new Error(`Rendered HTML is missing: ${expected}`);
 }
-console.log(JSON.stringify({ compiled: true, rendered_bytes: Buffer.byteLength(rendered), assertions: 5 }));
+for (const prohibited of ["Fiscal period", "Cost center", "Applied filters", "Prepared from ERPNext", "Review materiality", "-138,441.60"]) {
+	if (rendered.includes(prohibited)) throw new Error(`Rendered HTML contains prohibited text: ${prohibited}`);
+}
+const unitCount = (rendered.match(/>USD</g) || []).length;
+if (unitCount !== 2) throw new Error(`Expected one currency unit per amount column, got ${unitCount}`);
+console.log(JSON.stringify({ compiled: true, rendered_bytes: Buffer.byteLength(rendered), assertions: 12, accounting_parentheses: true, repeated_currency_symbols: false }));
