@@ -15,7 +15,7 @@ The report structure is based on every PDF supplied with this repository, especi
 
 ## Navigation and default report replacement
 
-The app does **not** create a standalone workspace. Installation adds a **Financial Reports** card inside ERPNext's existing **Accounting** workspace. The standard Profit and Loss Statement, Balance Sheet and Cash Flow Report records are redirected to this app, so their normal ERPNext links open the IFRS 18 versions. Uninstall restores those records to the `Accounts` module, removes the Accounting card and removes only the Account custom fields owned by this app. ERPNext source files are never patched.
+The app does **not** create a standalone workspace or add a second Financial Reports card to Accounting. Installation extends ERPNext's existing **Financial Reports** sub-workspace under **Accounting**. The single native Profit and Loss Statement, Balance Sheet and Cash Flow links remain in place while their Report records are redirected to this app. Only the additional statutory statements, management analytics and reporting controls receive new links. Uninstall restores the three native Report records to the `Accounts` module and removes only the navigation additions and Account custom fields owned by this app. ERPNext source files are never patched.
 
 ## Installation
 

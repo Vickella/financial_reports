@@ -11,10 +11,13 @@ A dedicated `ifrs18-clean.test` site was created with only Frappe and ERPNext, t
 - default accounts mapped: **82 of 82**;
 - unmapped accounts: **0**; fallback mappings: **0**;
 - standalone IFRS workspace: **absent**;
-- Financial Reports cards in Accounting: **1**;
+- extra Financial Reports cards or link sections in Accounting: **0**;
+- ERPNext's native `Financial Reports` sub-workspace remained under `Accounting`;
+- native Profit and Loss, Balance Sheet and Cash Flow links: **1 each**;
+- additional statutory statements were placed in `Financial Statements`; management and control links were placed in their own sections;
 - the three standard ERPNext reports resolved to the `Financial Reports` module.
 
-The app was uninstalled and reinstalled on this site. Uninstall restored the three report records to `Accounts`, removed the Accounting navigation section, and left **0** app-owned Account custom fields. Reinstallation reproduced the successful mapping and navigation result.
+The app was uninstalled and reinstalled on this site. Uninstall restored the three report records to `Accounts`, removed only the app-owned additions from the native Financial Reports sub-workspace, and left **0** app-owned Account custom fields. Reinstallation reproduced the successful mapping and navigation result.
 
 ## Transaction and report validation
 
