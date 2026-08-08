@@ -19,7 +19,7 @@ const template = fs.readFileSync(
 	"/home/frappe/frappe-bench/apps/financial_reports/financial_reports/templates/ifrs18_query_report.html",
 	"utf8",
 );
-process.stdout.write(frappe.template.compile(template, "ifrs18_pdf_validation")({
+const default_context = {
 	filters: {
 		company: "Test",
 		filter_based_on: "Date Range",
@@ -41,4 +41,7 @@ process.stdout.write(frappe.template.compile(template, "ifrs18_pdf_validation")(
 		{ account_name: "Cost of sales", current: -138.50, comparative: -70, currency: "USD" },
 		{ account_name: "'Operating profit", current: 80, comparative: 40, currency: "USD", is_total: 1 },
 	],
-}));
+};
+const input = fs.readFileSync(0, "utf8").trim();
+const context = input ? JSON.parse(input) : default_context;
+process.stdout.write(frappe.template.compile(template, "ifrs18_pdf_validation")(context));

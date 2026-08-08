@@ -79,6 +79,34 @@ financial_reports.pdf_report_names = new Set([
 	"IFRS 18 Mapping Audit",
 ]);
 
+financial_reports.install_strict_report_print_format = function () {
+	const QueryReport = frappe.views && frappe.views.QueryReport;
+	if (!QueryReport || QueryReport.prototype.__financial_reports_print_format) return;
+	const standard_get_custom_format = QueryReport.prototype.get_custom_format;
+	QueryReport.prototype.get_custom_format = async function (print_settings) {
+		let custom_format = await standard_get_custom_format.call(this, print_settings);
+		if (!financial_reports.pdf_report_names.has(this.report_name)) return custom_format;
+
+		let enforced_format = this.report_settings && this.report_settings.html_format;
+		if (!enforced_format) {
+			const settings = await frappe.xcall("frappe.desk.query_report.get_script", {
+				report_name: this.report_name,
+			});
+			enforced_format = settings && settings.html_format;
+			if (enforced_format && this.report_settings) {
+				this.report_settings.html_format = enforced_format;
+			}
+		}
+		if (enforced_format) {
+			print_settings.columns = [];
+			print_settings.orientation = "Landscape";
+			return enforced_format;
+		}
+		return custom_format;
+	};
+	QueryReport.prototype.__financial_reports_print_format = true;
+};
+
 financial_reports.install_pdf_download = function () {
 	if (!frappe.render_pdf || frappe.render_pdf.__financial_reports_download) return;
 	const standard_render_pdf = frappe.render_pdf;
@@ -90,7 +118,7 @@ financial_reports.install_pdf_download = function () {
 		}
 		const form_data = new FormData();
 		form_data.append("html", html);
-		if (opts.orientation) form_data.append("orientation", opts.orientation);
+		form_data.append("orientation", "Landscape");
 		form_data.append("blob", new Blob([], { type: "text/xml" }));
 		frappe.dom.freeze(__("Preparing PDF..."));
 		fetch("/api/method/frappe.utils.print_format.report_to_pdf", {
@@ -122,4 +150,7 @@ financial_reports.install_pdf_download = function () {
 	frappe.render_pdf = download_pdf;
 };
 
-frappe.ready(() => financial_reports.install_pdf_download());
+frappe.ready(() => {
+	financial_reports.install_strict_report_print_format();
+	financial_reports.install_pdf_download();
+});

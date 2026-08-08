@@ -8,7 +8,16 @@
 	.ifrs18-print th { background: #fff !important; border-bottom: 0; color: #111 !important; font-size: 8.5pt; font-weight: 700; padding: 3px 6px; vertical-align: bottom; }
 	.ifrs18-print th.ifrs-text, .ifrs18-print td.ifrs-text { text-align: left; }
 	.ifrs18-print th.ifrs-numeric, .ifrs18-print td.ifrs-numeric { text-align: right; white-space: nowrap; }
-	.ifrs18-print thead tr:first-child th.ifrs-numeric { border-bottom: 1px solid #111; }
+	.ifrs18-print thead tr:first-child th.ifrs-numeric { border-bottom: 0; position: relative; }
+	.ifrs18-print thead tr:first-child th.ifrs-numeric::after {
+		border-bottom: 1px solid #111;
+		bottom: 0;
+		content: "";
+		position: absolute;
+		right: 6px;
+		width: 32mm;
+		max-width: 90%;
+	}
 	.ifrs18-print:not(.ifrs18-dense) th:first-child, .ifrs18-print:not(.ifrs18-dense) td:first-child { width: 42%; }
 	.ifrs18-print .currency-unit-row th { border-bottom: 0; font-size: 7.5pt; padding-bottom: 8px; padding-top: 2px; }
 	.ifrs18-print td { border-bottom: 0; padding: 3px 6px; vertical-align: top; }
@@ -18,7 +27,16 @@
 	.ifrs18-print.ifrs18-dense td { padding: 2px 3px; }
 	.ifrs18-print.ifrs18-dense th:first-child, .ifrs18-print.ifrs18-dense td:first-child { min-width: 115px; }
 	.ifrs18-print tr.ifrs-total td { font-weight: 700; padding-bottom: 6px; }
-	.ifrs18-print tr.ifrs-total td.ifrs-numeric { border-top: 1px solid #111; }
+	.ifrs18-print tr.ifrs-total td.ifrs-numeric { border-top: 0; position: relative; }
+	.ifrs18-print tr.ifrs-total td.ifrs-numeric::before {
+		border-top: 1px solid #111;
+		content: "";
+		position: absolute;
+		right: 6px;
+		top: 0;
+		width: 32mm;
+		max-width: 90%;
+	}
 	.ifrs18-print tr.ifrs-section td { background: #fff !important; color: #111; font-weight: 700; padding-bottom: 3px; padding-top: 10px; }
 	@media print {
 		.ifrs18-print thead { display: table-header-group; }
