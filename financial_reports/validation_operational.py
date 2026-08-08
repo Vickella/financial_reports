@@ -48,17 +48,42 @@ def validate_currency_conversion():
 
 def validate_permissions():
 	reports = (
-		"Profit and Loss Statement", "Balance Sheet", "Cash Flow",
-		"IFRS 18 Financial Ratios", "IFRS 18 Mapping Audit",
+		"Profit and Loss Statement",
+		"Balance Sheet",
+		"Cash Flow",
+		"IFRS 18 Statement of Comprehensive Income",
+		"IFRS 18 Statement of Changes in Equity",
+		"IFRS 18 Notes Schedule",
+		"IFRS 18 Financial Ratios",
+		"IFRS 18 Working Capital Analysis",
+		"IFRS 18 Budget Variance",
+		"IFRS 18 Cost Center Profitability",
+		"IFRS 18 Management Performance Measures",
+		"IFRS 18 Mapping Audit",
 	)
 	result = {}
+	required_roles = {"Accounts User", "Accounts Manager"}
 	for name in reports:
 		doc = frappe.get_doc("Report", name)
 		result[name] = {
 			"roles": [row.role for row in doc.roles],
-			"administrator_read": bool(frappe.has_permission("Report", doc=doc, ptype="read", user="Administrator")),
-			"guest_read": bool(frappe.has_permission("Report", doc=doc, ptype="read", user="Guest")),
+			"administrator_read": bool(
+				frappe.has_permission(
+					"Report", doc=doc, ptype="read", user="Administrator"
+				)
+			),
+			"guest_read": bool(
+				frappe.has_permission(
+					"Report", doc=doc, ptype="read", user="Guest"
+				)
+			),
 		}
-		if not result[name]["administrator_read"] or result[name]["guest_read"]:
-			raise AssertionError(f"Unexpected report permission result for {name}: {result[name]}")
+		if (
+			not result[name]["administrator_read"]
+			or result[name]["guest_read"]
+			or not required_roles.issubset(result[name]["roles"])
+		):
+			raise AssertionError(
+				f"Unexpected report permission result for {name}: {result[name]}"
+			)
 	return result

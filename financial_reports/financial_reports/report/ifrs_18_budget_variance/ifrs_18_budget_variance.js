@@ -6,7 +6,10 @@ frappe.query_reports["IFRS 18 Budget Variance"] = {
 		{fieldname:"to_date",label:__("Current To"),fieldtype:"Date",default:frappe.datetime.year_end(),reqd:1},
 		{fieldname:"comparison_enabled",label:__("Compare custom period"),fieldtype:"Check",default:0},
 		{fieldname:"comparison_from_date",label:__("Comparative From"),fieldtype:"Date",depends_on:"eval:doc.comparison_enabled",mandatory_depends_on:"eval:doc.comparison_enabled",default:frappe.datetime.add_years(frappe.datetime.year_start(),-1)},
-		{fieldname:"comparison_to_date",label:__("Comparative To"),fieldtype:"Date",depends_on:"eval:doc.comparison_enabled",mandatory_depends_on:"eval:doc.comparison_enabled",default:frappe.datetime.add_years(frappe.datetime.year_end(),-1)}
+		{fieldname:"comparison_to_date",label:__("Comparative To"),fieldtype:"Date",depends_on:"eval:doc.comparison_enabled",mandatory_depends_on:"eval:doc.comparison_enabled",default:frappe.datetime.add_years(frappe.datetime.year_end(),-1)},
+		{fieldname:"finance_book",label:__("Finance Book"),fieldtype:"Link",options:"Finance Book"},
+		{fieldname:"include_default_book_entries",label:__("Include Default FB Entries"),fieldtype:"Check",default:1}
 	]
 };
+erpnext.utils.add_dimensions("IFRS 18 Budget Variance", 10);
 financial_reports.apply_accounting_formatter("IFRS 18 Budget Variance");

@@ -1,4 +1,4 @@
-frappe.query_reports["IFRS 18 Management Performance Measures"] = $.extend({}, erpnext.financial_statements);
+frappe.query_reports["IFRS 18 Management Performance Measures"] = $.extend({}, erpnext.financial_statements, {tree: false, name_field: null, parent_field: null});
 erpnext.utils.add_dimensions("IFRS 18 Management Performance Measures", 10);
 frappe.query_reports["IFRS 18 Management Performance Measures"].filters.push(
 	{fieldname:"accumulated_values",label:__("Accumulated Values"),fieldtype:"Check",default:0,hidden:1},

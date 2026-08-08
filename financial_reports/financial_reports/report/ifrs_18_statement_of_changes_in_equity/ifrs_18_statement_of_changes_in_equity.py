@@ -1,8 +1,32 @@
 import frappe
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import add_days, flt
 
-from financial_reports.reporting import aggregate_accounts, currency_for, get_periods, prepare_filters, value_for_category
+from erpnext.accounts.report.financial_statements import get_accounting_entries
+
+from financial_reports.reporting import (
+	aggregate_accounts,
+	currency_for,
+	get_periods,
+	prepare_filters,
+	value_for_category,
+)
+
+
+def _equity_balances(filters, from_date, to_date):
+	entries = get_accounting_entries(
+		"GL Entry",
+		from_date,
+		to_date,
+		filters,
+		root_type="Equity",
+		ignore_closing_entries=False,
+		group_by_account=True,
+	)
+	return {
+		entry.account: flt(entry.credit) - flt(entry.debit)
+		for entry in entries
+	}
 
 
 def execute(filters=None):
@@ -11,10 +35,26 @@ def execute(filters=None):
 	currency = currency_for(filters)
 	accounts = frappe.get_all(
 		"Account",
-		filters={"company": filters.company, "root_type": "Equity", "is_group": 0, "disabled": 0},
+		filters={
+			"company": filters.company,
+			"root_type": "Equity",
+			"is_group": 0,
+			"disabled": 0,
+		},
 		fields=["name", "account_name", "custom_ifrs18_line_item"],
 		order_by="lft",
 	)
+	period_balances = {}
+	for period in periods:
+		period_balances[period.key] = {
+			"opening": _equity_balances(
+				filters, None, add_days(period.from_date, -1)
+			),
+			"movements": _equity_balances(
+				filters, period.from_date, period.to_date
+			),
+		}
+
 	data = []
 	for account in accounts:
 		row = {
@@ -24,31 +64,40 @@ def execute(filters=None):
 		}
 		has_value = False
 		for period in periods:
-			opening = frappe.db.sql(
-				"""select coalesce(sum(credit-debit),0) from `tabGL Entry`
-				where company=%s and account=%s and posting_date < %s and is_cancelled=0""",
-				(filters.company, account.name, period.from_date),
-			)[0][0]
-			movement = frappe.db.sql(
-				"""select coalesce(sum(credit-debit),0) from `tabGL Entry`
-				where company=%s and account=%s and posting_date between %s and %s and is_cancelled=0""",
-				(filters.company, account.name, period.from_date, period.to_date),
-			)[0][0]
-			row[f"{period.key}_opening"] = flt(opening)
-			row[f"{period.key}_movements"] = flt(movement)
-			row[f"{period.key}_closing"] = flt(opening) + flt(movement)
+			opening = flt(
+				period_balances[period.key]["opening"].get(account.name)
+			)
+			movement = flt(
+				period_balances[period.key]["movements"].get(account.name)
+			)
+			row[f"{period.key}_opening"] = opening
+			row[f"{period.key}_movements"] = movement
+			row[f"{period.key}_closing"] = opening + movement
 			has_value = has_value or bool(opening or movement)
 		if has_value or filters.show_zero_values:
 			data.append(row)
 
 	pl_filters = frappe._dict(filters.copy())
 	pl_filters.accumulated_values = 0
-	pnl_periods, aggregates, pnl_accounts = aggregate_accounts(pl_filters, ("Income", "Expense"))
-	profit_row = {"component": _("Profit for the reporting period"), "account": "", "currency": currency}
+	_pnl_periods, aggregates, _pnl_accounts = aggregate_accounts(
+		pl_filters, ("Income", "Expense")
+	)
+	profit_row = {
+		"component": _("Profit for the reporting period"),
+		"account": "",
+		"currency": currency,
+	}
 	for period in periods:
-		profit = sum(value_for_category(aggregates, category, period.key) for category in (
-			"Operating", "Investing", "Financing", "Income taxes", "Discontinued operations"
-		))
+		profit = sum(
+			value_for_category(aggregates, category, period.key)
+			for category in (
+				"Operating",
+				"Investing",
+				"Financing",
+				"Income taxes",
+				"Discontinued operations",
+			)
+		)
 		profit_row[f"{period.key}_opening"] = 0
 		profit_row[f"{period.key}_movements"] = profit
 		profit_row[f"{period.key}_closing"] = profit
@@ -57,7 +106,7 @@ def execute(filters=None):
 
 	columns = [
 		{"fieldname": "component", "label": _("Equity component"), "fieldtype": "Data", "width": 250},
-		{"fieldname": "account", "label": _("Account"), "fieldtype": "Link", "options": "Account", "width": 210},
+		{"fieldname": "account", "label": _("Account"), "fieldtype": "Link", "options": "Account", "width": 210, "print_hide": 1},
 	]
 	for period in periods:
 		columns.extend([
@@ -65,5 +114,7 @@ def execute(filters=None):
 			{"fieldname": f"{period.key}_movements", "label": _("{0} changes").format(period.label), "fieldtype": "Currency", "options": "currency", "width": 180},
 			{"fieldname": f"{period.key}_closing", "label": _("{0} closing").format(period.label), "fieldtype": "Currency", "options": "currency", "width": 180},
 		])
-	columns.append({"fieldname": "currency", "label": _("Currency"), "fieldtype": "Data", "hidden": 1})
+	columns.append(
+		{"fieldname": "currency", "label": _("Currency"), "fieldtype": "Data", "hidden": 1}
+	)
 	return columns, data

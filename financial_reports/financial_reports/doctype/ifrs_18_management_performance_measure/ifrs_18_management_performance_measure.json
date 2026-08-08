@@ -9,17 +9,20 @@
   {"role": "Accounts Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1},
   {"role": "Accounts User", "read": 1, "report": 1}
  ],
- "field_order": ["measure_name", "company", "active", "definition_section", "comparable_subtotal", "reason_for_use", "calculation_description", "public_communication_reference", "adjustments_section", "adjustments", "change_section", "change_explanation"],
+ "field_order": ["measure_name", "measure_template", "company_column", "company", "active", "definition_section", "comparable_subtotal", "definition_column", "reason_for_use", "calculation_description", "public_communication_reference", "adjustments_section", "adjustments", "change_section", "change_explanation"],
  "fields": [
   {"fieldname": "measure_name", "fieldtype": "Data", "label": "Measure name", "reqd": 1, "unique": 1},
+  {"default": "Custom", "description": "Choose a common measure to load its definition and suggested account adjustments, or retain Custom.", "fieldname": "measure_template", "fieldtype": "Select", "label": "Common measure template", "options": "Custom\nEBIT\nEBITDA\nAdjusted EBITDA\nAdjusted operating profit\nAdjusted profit before tax\nAdjusted profit after tax"},
+  {"fieldname": "company_column", "fieldtype": "Column Break"},
   {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "reqd": 1},
   {"default": "1", "fieldname": "active", "fieldtype": "Check", "label": "Active"},
   {"fieldname": "definition_section", "fieldtype": "Section Break", "label": "IFRS 18 disclosures"},
   {"fieldname": "comparable_subtotal", "fieldtype": "Select", "label": "Most directly comparable IFRS subtotal", "options": "Operating profit\nProfit before financing and income taxes\nProfit before income tax\nProfit from continuing operations\nProfit", "reqd": 1},
+  {"fieldname": "definition_column", "fieldtype": "Column Break"},
   {"fieldname": "reason_for_use", "fieldtype": "Small Text", "label": "Why management uses this measure", "reqd": 1},
   {"fieldname": "calculation_description", "fieldtype": "Small Text", "label": "How the measure is calculated", "reqd": 1},
   {"fieldname": "public_communication_reference", "fieldtype": "Data", "label": "Public communication reference"},
-  {"fieldname": "adjustments_section", "fieldtype": "Section Break", "label": "Reconciliation adjustments"},
+  {"description": "Reconcile the measure in the table below. Review every suggested account, treatment, tax effect and NCI effect before reporting.", "fieldname": "adjustments_section", "fieldtype": "Section Break", "label": "Reconciliation adjustments"},
   {"fieldname": "adjustments", "fieldtype": "Table", "label": "Adjustments", "options": "IFRS 18 MPM Adjustment"},
   {"fieldname": "change_section", "fieldtype": "Section Break", "label": "Changes"},
   {"description": "Explain changes to calculation, additions, cessations or label changes and the reasons for them.", "fieldname": "change_explanation", "fieldtype": "Small Text", "label": "Change explanation"}

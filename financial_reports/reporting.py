@@ -7,7 +7,7 @@ from copy import deepcopy
 
 import frappe
 from frappe import _
-from frappe.utils import flt, formatdate, getdate
+from frappe.utils import flt, getdate
 
 from erpnext.accounts.report.financial_statements import get_columns, get_data, get_period_list
 from erpnext.accounts.utils import get_fiscal_year
@@ -79,6 +79,22 @@ def prepare_filters(filters, accumulated_values=False):
 	return filters
 
 
+def _custom_period_label(from_date, to_date):
+	if (
+		from_date.year == to_date.year
+		and from_date.month == 1
+		and from_date.day == 1
+		and to_date.month == 12
+		and to_date.day == 31
+	):
+		return str(to_date.year)
+	if from_date.year == to_date.year:
+		separator = f" {chr(8211)} "
+		return f"{from_date:%d %b}{separator}{to_date:%d %b %Y}"
+	separator = f" {chr(8211)} "
+	return f"{from_date:%d %b %Y}{separator}{to_date:%d %b %Y}"
+
+
 def get_periods(filters):
 	if filters.get("comparison_enabled"):
 		required = ("period_start_date", "period_end_date", "comparison_from_date", "comparison_to_date")
@@ -93,16 +109,16 @@ def get_periods(filters):
 		earliest = min(current_from, comparison_from)
 		latest = max(current_to, comparison_to)
 		periods = []
-		for key, label, from_date, to_date in (
-			("comparative_period", _("Comparative"), comparison_from, comparison_to),
-			("current_period", _("Current"), current_from, current_to),
+		for key, from_date, to_date in (
+			("comparative_period", comparison_from, comparison_to),
+			("current_period", current_from, current_to),
 		):
 			fiscal_year = get_fiscal_year(to_date, company=filters.company)
 			periods.append(frappe._dict(
 				from_date=from_date,
 				to_date=to_date,
 				key=key,
-				label=f"{label} ({formatdate(from_date)} – {formatdate(to_date)})",
+				label=_custom_period_label(from_date, to_date),
 				year_start_date=earliest,
 				year_end_date=latest,
 				to_date_fiscal_year=fiscal_year[0],
